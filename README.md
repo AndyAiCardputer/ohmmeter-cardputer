@@ -4,6 +4,10 @@ A DIY precision ohmmeter using M5Stack Cardputer v1.1 and ADS1115 16-bit ADC mod
 
 Measures resistance from **22 Ohm to 2 MOhm** with automatic ranging, adaptive averaging, smooth display output, and continuity test mode with audible buzzer.
 
+**Two display versions included:**
+- Built-in Cardputer display (240x135)
+- External 2.8" ILI9341 display (320x240) with big digits and bar graph
+
 ## Features
 
 - **16-bit precision** — ADS1115 ADC with 7.8 µV resolution at highest gain
@@ -17,6 +21,7 @@ Measures resistance from **22 Ohm to 2 MOhm** with automatic ranging, adaptive a
 - **Open circuit detection** — shows "OPEN" when probes are disconnected (with 3-reading confirmation)
 - **Real-time info** — voltage, PGA range, VDD, and reference resistor shown on screen
 - **Safe for boards** — max 0.5 mA test current through 10 kOhm reference resistor
+- **External display** — optional 2.8" ILI9341 version with big digits and log-scale bar graph
 
 ## Tested Accuracy
 
@@ -31,14 +36,19 @@ Measures resistance from **22 Ohm to 2 MOhm** with automatic ranging, adaptive a
 
 ## Hardware Required
 
+### Base (both versions):
 - M5Stack Cardputer v1.1
 - ADS1115 16-bit ADC module (blue breakout board)
 - 10 kOhm resistor (1% tolerance recommended, measure exact value with multimeter)
 - Grove cable or 4 wires for I2C connection
 - 2 probe wires
 
+### For external display version (optional):
+- 2.8" ILI9341 TFT display (320x240, SPI interface)
+
 ## Circuit
 
+### ADS1115 Connection (both versions):
 ```
 Cardputer Grove Port A          ADS1115 Module
   5V (red wire)  ──────────────── VDD
@@ -55,6 +65,19 @@ Connect unknown resistor between Probe 1 and Probe 2.
 ```
 
 **Important:** On Cardputer v1.1, Grove Port A pins are reversed — SDA is GPIO 2, SCL is GPIO 1.
+
+### External ILI9341 Display Connection:
+```
+Cardputer EXT Pins              ILI9341 Display
+  GPIO 40 (EXT 7)  ──────────── SCK
+  GPIO 14 (EXT 9)  ──────────── MOSI (SDA)
+  GPIO 5  (EXT 13) ──────────── CS
+  GPIO 6  (EXT 5)  ──────────── DC
+  GPIO 3  (EXT 1)  ──────────── RST
+  3.3V              ──────────── VCC
+  GND               ──────────── GND
+  3.3V              ──────────── LED (backlight)
+```
 
 ## How It Works
 
@@ -95,10 +118,40 @@ To reduce noise at high resistance values (where signal-to-noise ratio is worse)
 Press `S` on the keyboard to toggle continuity mode on/off. When enabled:
 - A continuous 2 kHz tone plays through the built-in speaker while resistance is below 50 Ohm
 - The tone stops instantly when probes are separated
-- A green "BEEP" indicator appears on screen
+- A green "BEEP" / "CONTINUITY" indicator appears on screen
 - Status shown in title bar: `[S] BEEP ON` / `[S] beep off`
 
 The test current is limited to 0.5 mA by the 10 kOhm reference resistor, making it safe for probing PCB traces and components.
+
+## Display Versions
+
+### Built-in Display (240x135)
+```
++--------------------------------------+
+| OHMMETER v1.5       [S] beep off    |  <- Title bar + continuity status
+|                                      |
+|           10.04                      |  <- Big digits (resistance value)
+|           kOhm                       |  <- Auto-units (or green BEEP bar)
+|                                      |
+| V: 0.4453V           PGA: 1.024V    |  <- Measured voltage & PGA range
+| VDD:4.94V            Rref=10.04k    |  <- Supply voltage & reference R
++--------------------------------------+
+```
+
+### External ILI9341 Display (320x240)
+```
++----------------------------------------------+
+| PRECISION OHMMETER v1.5     [S] beep off     |
+|                                              |
+|              10.04                           |  <- Larger digits
+|              kOhm                            |
+|                                              |
+|  [==========          ] 10  1k  100k  2M     |  <- Log-scale bar graph
+|                                              |
+| V: 0.4453V              PGA: 1.024V         |
+| VDD: 4.994V   Rref=10.04k       N=16        |
++----------------------------------------------+
+```
 
 ## Configuration
 
@@ -113,16 +166,22 @@ VDD is auto-calibrated — leave probes open at startup for best accuracy.
 
 ## Building
 
-### PlatformIO (recommended)
+### Built-in display version:
 
 ```bash
-# Build
+# From repository root
 pio run
-
-# Upload
 pio run -t upload
+pio device monitor --baud 115200
+```
 
-# Serial monitor
+### External ILI9341 display version:
+
+```bash
+# From ili9341/ directory
+cd ili9341
+pio run
+pio run -t upload
 pio device monitor --baud 115200
 ```
 
@@ -135,16 +194,31 @@ pio device monitor --baud 115200
 
 All dependencies are installed automatically by PlatformIO.
 
+## Firmware Binaries
+
+Pre-built firmware binaries are available in the `firmware/` folder:
+
+| File | Version | Display |
+|------|---------|---------|
+| `ohmmeter_v1.5.1.bin` | v1.5.1 | Built-in (240x135) |
+| `ohmmeter_ili9341_v1.5.1.bin` | v1.5.1 | External ILI9341 (320x240) |
+
+Flash using esptool:
+```bash
+esptool.py --chip esp32s3 --port /dev/cu.usbmodem* write_flash 0x10000 firmware/ohmmeter_v1.5.1.bin
+```
+
 ## Usage
 
 1. Connect the ADS1115 module to Cardputer via Grove cable
 2. Solder/connect the reference resistor between VDD and A0 on the ADS1115 module
 3. Connect probe wires to A0 (Probe 1) and GND (Probe 2)
-4. Flash the firmware
-5. **Leave probes open at startup** — the device calibrates VDD automatically (128 samples)
-6. Connect the unknown resistor between the probes
-7. Read the value on screen
-8. Press `S` to enable/disable continuity buzzer mode
+4. (Optional) Connect ILI9341 display to EXT pins
+5. Flash the appropriate firmware version
+6. **Leave probes open at startup** — the device calibrates VDD automatically (128 samples)
+7. Connect the unknown resistor between the probes
+8. Read the value on screen
+9. Press `S` to enable/disable continuity buzzer mode
 
 ## Keyboard Controls
 
@@ -152,22 +226,9 @@ All dependencies are installed automatically by PlatformIO.
 |-----|----------|
 | S | Toggle continuity test mode (buzzer on/off) |
 
-## Display Layout
-
-```
-+--------------------------------------+
-| OHMMETER v1.5       [S] beep off    |  <- Title bar + continuity status
-|                                      |
-|           10.04                      |  <- Big digits (resistance value)
-|           kOhm                       |  <- Auto-units (or green BEEP bar)
-|                                      |
-| V: 0.4453V           PGA: 1.024V    |  <- Measured voltage & PGA range
-| VDD:4.94V            Rref=10.04k    |  <- Supply voltage & reference R
-+--------------------------------------+
-```
-
 ## Version History
 
+- **v1.5.1-ILI9341** — External 2.8" ILI9341 display version with big digits and bar graph
 - **v1.5.1** — Continuity test mode with `S` key toggle and continuous buzzer
 - **v1.4.1** — Improved 1 MOhm measurement: high-precision VDD calibration (128 samples), OPEN confirmation (3 reads)
 - **v1.3.0** — Adaptive averaging (16-128 samples), EMA smoothing filter
