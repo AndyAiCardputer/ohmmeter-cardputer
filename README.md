@@ -8,6 +8,12 @@ Measures resistance from **22 Ohm to 2 MOhm** with automatic ranging, adaptive a
 - Built-in Cardputer display (240x135)
 - External 2.8" ILI9341 display (320x240) with big digits and bar graph
 
+## Photos
+
+| Ohmmeter in action | ADS1115 board (top) | ADS1115 board (side) |
+|:---:|:---:|:---:|
+| ![Working](images/ohmmeter_working.png) | ![Board top](images/ads1115_board_top.png) | ![Board side](images/ads1115_board_side.png) |
+
 ## Features
 
 - **16-bit precision** — ADS1115 ADC with 7.8 µV resolution at highest gain
